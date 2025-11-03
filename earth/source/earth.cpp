@@ -205,12 +205,12 @@ void init(){
   glAttachShader(program, vertex_shader);
   glAttachShader(program, fragment_shader);
   
+  // Bind fragment output before linking to guarantee color attachment 0
+  glBindFragDataLocation(program, 0, "fragColor");
   glLinkProgram(program);
   check_program_link(program);
   
   glUseProgram(program);
-  
-  glBindFragDataLocation(program, 0, "fragColor");
 
   //Per vertex attributes
   GLuint vPosition = glGetAttribLocation( program, "vPosition" );
@@ -239,16 +239,25 @@ void init(){
   glGenTextures( 1, &cloud_texture );
   glGenTextures( 1, &perlin_texture);
   
-  std::string earth_img = source_path + "/images/checkerboard.png";
+  // Load base day (earth) texture
+  std::string earth_img = source_path + "/images/world.200405.3.png";
   loadFreeImageTexture(earth_img.c_str(), month_texture, GL_TEXTURE0);
-    
   glUniform1i( glGetUniformLocation(program, "textureEarth"), 0 );
 
-  //TODO: ADD NIGHT TEXTURE
+  // Load night lights texture
+  std::string night_img = source_path + "/images/BlackMarble.png";
+  loadFreeImageTexture(night_img.c_str(), night_texture, GL_TEXTURE1);
+  glUniform1i( glGetUniformLocation(program, "textureNight"), 1 );
 
-  //TODO: ADD CLOUD TEXTURE
+  // Load cloud texture
+  std::string cloud_img = source_path + "/images/cloud_combined.png";
+  loadFreeImageTexture(cloud_img.c_str(), cloud_texture, GL_TEXTURE2);
+  glUniform1i( glGetUniformLocation(program, "textureCloud"), 2 );
   
-  //TODO: ADD NOISE TEXTURE
+  // Load perlin noise texture (used to subtly move/distort clouds)
+  std::string perlin_img = source_path + "/images/perlin_noise.png";
+  loadFreeImageTexture(perlin_img.c_str(), perlin_texture, GL_TEXTURE3);
+  glUniform1i( glGetUniformLocation(program, "texturePerlin"), 3 );
 
   glBindVertexArray( vao );
   glBindBuffer( GL_ARRAY_BUFFER, buffer );
@@ -315,9 +324,12 @@ void init(){
 void animate(){
   //Do 30 times per second
   if(glfwGetTime() > (1.0/60.0)){
-
+    // Cloud drift timer (slow)
     animate_time = animate_time + 0.0001;
-    rotation_angle  = rotation_angle + 0.25;
+    // Sun cycle duration (seconds per full rotation)
+    const float sun_cycle_seconds = 25.0f; // target ~20-30s cycle
+    // Advance rotation angle so one revolution takes sun_cycle_seconds
+    rotation_angle  = rotation_angle + (360.0f / sun_cycle_seconds) * (1.0f/60.0f);
 
     glfwSetTime(0.0);
   }
@@ -354,6 +366,8 @@ int main(void){
   glfwMakeContextCurrent(window);
   gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
   glfwSwapInterval(1);
+  // Ensure window stays open until user closes
+  glfwSetWindowShouldClose(window, GLFW_FALSE);
   
   init();
   
@@ -394,6 +408,10 @@ int main(void){
     
     animate();
     glUniform1f( glGetUniformLocation(program, "animate_time"),   animate_time );
+    // Animate light position around the Y axis to simulate the sun
+    float radians = rotation_angle * (M_PI/180.0f);
+    vec4 moving_light_position = vec4(10.0f * cos(radians), 0.0f, 10.0f * sin(radians), 1.0f);
+    glUniform4fv( glGetUniformLocation(program, "LightPosition"), 1, moving_light_position );
 
     // ====== Draw ======
     glBindVertexArray(vao);

@@ -137,44 +137,69 @@ bool Mesh::loadOBJ(const char * path){
   return true;
 }
 
-bool Mesh::makeSphere(int steps){
-  //TODO: Normals and texture coordinates
-  normals.push_back(vec3(0,0,1));
-  uvs.push_back(vec2(0,0));
+bool Mesh::makeSphere(int steps) {
+  vertices.clear();
+  normals.clear();
+  uvs.clear();
 
-  double step_theta = (2*M_PI)/(double)(steps-1);
-  double step_phi   = (M_PI)/(double)(steps-1);
-  
-  std::vector < vec3 > pstrip0;
-  std::vector < vec3 > pstrip1;
-  
-  //latitude
-  for(unsigned int i=0; i < steps; i++){
-    double phi = i*step_phi;
-    //longitude
-    for(unsigned int j=0; j < steps; j++){
-      double theta = j*step_theta;
-      vec3 p = vec3(-cos(theta)*sin(phi), cos(phi), sin(theta)*sin(phi));
+  double step_theta = (2 * M_PI) / (double)(steps - 1);
+  double step_phi   = (M_PI) / (double)(steps - 1);
+
+  std::vector<vec3> pstrip0;
+  std::vector<vec3> pstrip1;
+  std::vector<vec2> uvstrip0;
+  std::vector<vec2> uvstrip1;
+
+  // latitude
+  for (unsigned int i = 0; i < (unsigned)steps; i++) {
+    double phi = i * step_phi;
+    double vc  = (double)i / (steps - 1);
+
+    // longitude
+    for (unsigned int j = 0; j < (unsigned)steps; j++) {
+      double theta = j * step_theta;
+      double uc    = (double)j / (steps - 1);
+
+      vec3 p = vec3(
+        -cos(theta) * sin(phi),
+        cos(phi),
+        sin(theta) * sin(phi)
+      );
       pstrip1.push_back(p);
+      uvstrip1.push_back(vec2(uc, vc));
     }
-    
-    for(unsigned int k=0; (k+1) < pstrip0.size(); k++){
+
+    for (unsigned int k = 0; (k + 1) < pstrip0.size(); k++) {
+      // positions
       vertices.push_back(pstrip0[k]);
-      
       vertices.push_back(pstrip1[k]);
-      
-      vertices.push_back(pstrip0[k+1]);
-      
-      vertices.push_back(pstrip0[k+1]);
-      
+      vertices.push_back(pstrip0[k + 1]);
+      vertices.push_back(pstrip0[k + 1]);
       vertices.push_back(pstrip1[k]);
-       
-      vertices.push_back(pstrip1[k+1]);
+      vertices.push_back(pstrip1[k + 1]);
+
+      // normals (normalized position on unit sphere)
+      normals.push_back(normalize(pstrip0[k]));
+      normals.push_back(normalize(pstrip1[k]));
+      normals.push_back(normalize(pstrip0[k + 1]));
+      normals.push_back(normalize(pstrip0[k + 1]));
+      normals.push_back(normalize(pstrip1[k]));
+      normals.push_back(normalize(pstrip1[k + 1]));
+
+      // texture coordinates
+      uvs.push_back(uvstrip0[k]);
+      uvs.push_back(uvstrip1[k]);
+      uvs.push_back(uvstrip0[k + 1]);
+      uvs.push_back(uvstrip0[k + 1]);
+      uvs.push_back(uvstrip1[k]);
+      uvs.push_back(uvstrip1[k + 1]);
     }
-    
+
     pstrip1.swap(pstrip0);
+    uvstrip1.swap(uvstrip0);
     pstrip1.clear();
+    uvstrip1.clear();
   }
-  
+
   return true;
-  }
+}
