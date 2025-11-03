@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 4.0)
+cmake_minimum_required(VERSION 3.5)
 PROJECT(MODULE_11_EARTH)
 #SET(CMAKE_BUILD_TYPE "Release")
 
-if (!MSVC)
+if (NOT MSVC)
 SET(CMAKE_CXX_FLAGS "-Wno-deprecated")
 endif()
 
